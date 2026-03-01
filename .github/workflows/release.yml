@@ -28,7 +28,7 @@ jobs:
 
       - name: Clean environment
         run: |
-          make clean || true
+          xcodebuild clean -project VVTerm.xcodeproj -scheme VVTerm || true
           rm -rf ~/Library/Developer/Xcode/DerivedData
           rm -rf ~/Library/Caches/com.apple.dt.Xcode
 
@@ -38,7 +38,17 @@ jobs:
           agvtool new-version -all "$BUILD_NUMBER"
 
       - name: Build
-        run: make
+        run: |
+          xcodebuild archive \
+            -project VVTerm.xcodeproj \
+            -scheme VVTerm \
+            -sdk iphoneos \
+            -archivePath "$RUNNER_TEMP/VVTerm.xcarchive" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+          mkdir -p packages/Payload
+          cp -r "$RUNNER_TEMP/VVTerm.xcarchive/Products/Applications/VVTerm.app" packages/Payload/
+          (cd packages && zip -r VVTerm.ipa Payload)
 
       - name: Prepare upload directory
         run: |
