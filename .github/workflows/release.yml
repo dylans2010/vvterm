@@ -1,0 +1,66 @@
+name: Create New Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Select Xcode 16.2
+        run: |
+          sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+          xcodebuild -version
+          xcodebuild -showsdks
+          xcodebuild -showsdks | grep iphoneos
+
+      - name: Clean environment
+        run: |
+          make clean || true
+          rm -rf ~/Library/Developer/Xcode/DerivedData
+          rm -rf ~/Library/Caches/com.apple.dt.Xcode
+
+      - name: Increment build number
+        run: |
+          BUILD_NUMBER=$(git rev-list --count HEAD)
+          agvtool new-version -all "$BUILD_NUMBER"
+
+      - name: Build
+        run: make
+
+      - name: Prepare upload directory
+        run: |
+          mkdir -p upload
+          mv packages/* upload/
+
+      - name: Get version
+        id: get_version
+        run: |
+          VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" upload/Payload/*.app/Info.plist)
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          name: Portal v${{ steps.get_version.outputs.VERSION }}
+          tag_name: v${{ steps.get_version.outputs.VERSION }}
+          body: |
+            This is a stable release of Portal.
+
+            **Changelog:** https://github.com/${{ github.repository }}/commits/v${{ steps.get_version.outputs.VERSION }}
+          files: upload/*.ipa
+          fail_on_unmatched_files: true
+          token: ${{ secrets.GITHUB_TOKEN }}
