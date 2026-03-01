@@ -96,7 +96,7 @@ final class TerminalAccessoryPreferencesManager: ObservableObject {
     }
 
     var canCreateSnippet: Bool {
-        snippets.count < TerminalAccessoryProfile.maxSnippets
+        return true // Pro features unlocked
     }
 
     func snippet(for id: UUID) -> TerminalSnippet? {

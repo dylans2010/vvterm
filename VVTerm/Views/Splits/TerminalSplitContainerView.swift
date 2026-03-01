@@ -43,7 +43,6 @@ struct SplitCommands: Commands {
     }
 
     private var canSplit: Bool {
-        guard StoreManager.shared.isPro else { return false }
         return splitActions != nil && activePaneId != nil
     }
 

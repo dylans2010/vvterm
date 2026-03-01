@@ -232,7 +232,7 @@ final class ConnectionSessionManager: ObservableObject {
         }
     }
 
-    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "ConnectionSession")
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "app.vivy.vvterm", category: "ConnectionSession")
     private var shellRegistry = SSHShellRegistry(staleThreshold: 120)
 
     /// Terminal views indexed by session ID for voice input and other external interactions
@@ -277,8 +277,7 @@ final class ConnectionSessionManager: ObservableObject {
     }
 
     var canOpenNewTab: Bool {
-        if StoreManager.shared.isPro { return true }
-        return activeSessions.count < FreeTierLimits.maxTabs
+        return true // Pro features unlocked
     }
 
     // MARK: - Open Connection
