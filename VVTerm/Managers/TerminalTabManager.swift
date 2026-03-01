@@ -65,7 +65,7 @@ final class TerminalTabManager: ObservableObject {
     /// Servers that already ran tmux cleanup (per app launch)
     private var tmuxCleanupServers: Set<UUID> = []
 
-    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "TerminalTabManager")
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "app.vivy.vvterm", category: "TerminalTabManager")
 
     private let persistenceKey = "terminalTabsSnapshot.v1"
     private var persistTask: Task<Void, Never>?
@@ -92,9 +92,7 @@ final class TerminalTabManager: ObservableObject {
 
     /// Check if can open new tab (Pro limit check)
     var canOpenNewTab: Bool {
-        if StoreManager.shared.isPro { return true }
-        let totalTabs = tabsByServer.values.flatMap { $0 }.count
-        return totalTabs < FreeTierLimits.maxTabs
+        return true // Pro features unlocked
     }
 
     /// Open a new tab for a server

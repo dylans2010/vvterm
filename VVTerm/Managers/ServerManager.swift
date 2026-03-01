@@ -16,7 +16,7 @@ final class ServerManager: ObservableObject {
 
     private let cloudKit = CloudKitManager.shared
     private let keychain = KeychainManager.shared
-    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "ServerManager")
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "app.vivy.vvterm", category: "ServerManager")
     private var isSyncEnabled: Bool { SyncSettings.isEnabled }
 
     // Local storage keys
@@ -715,17 +715,15 @@ final class ServerManager: ObservableObject {
     // MARK: - Pro Limits
 
     var canAddServer: Bool {
-        if StoreManager.shared.isPro { return true }
-        return servers.count < FreeTierLimits.maxServers
+        return true // Pro features unlocked
     }
 
     var canAddWorkspace: Bool {
-        if StoreManager.shared.isPro { return true }
-        return workspaces.count < FreeTierLimits.maxWorkspaces
+        return true // Pro features unlocked
     }
 
     var canCreateCustomEnvironment: Bool {
-        StoreManager.shared.isPro
+        return true // Pro features unlocked
     }
 
     // MARK: - Downgrade Locking
@@ -743,45 +741,37 @@ final class ServerManager: ObservableObject {
 
     /// Set of server IDs that are accessible on free tier (oldest N servers)
     var unlockedServerIds: Set<UUID> {
-        if StoreManager.shared.isPro { return Set(servers.map(\.id)) }
-        let unlocked = serversSortedByCreation.prefix(FreeTierLimits.maxServers)
-        return Set(unlocked.map(\.id))
+        return Set(servers.map(\.id)) // Pro features unlocked
     }
 
     /// Set of workspace IDs that are accessible on free tier (first N workspaces by order)
     var unlockedWorkspaceIds: Set<UUID> {
-        if StoreManager.shared.isPro { return Set(workspaces.map(\.id)) }
-        let unlocked = workspacesSortedByOrder.prefix(FreeTierLimits.maxWorkspaces)
-        return Set(unlocked.map(\.id))
+        return Set(workspaces.map(\.id)) // Pro features unlocked
     }
 
     /// Check if a specific server is locked (over free tier limit)
     func isServerLocked(_ server: Server) -> Bool {
-        if StoreManager.shared.isPro { return false }
-        return !unlockedServerIds.contains(server.id)
+        return false // Pro features unlocked
     }
 
     /// Check if a specific workspace is locked (over free tier limit)
     func isWorkspaceLocked(_ workspace: Workspace) -> Bool {
-        if StoreManager.shared.isPro { return false }
-        return !unlockedWorkspaceIds.contains(workspace.id)
+        return false // Pro features unlocked
     }
 
     /// Number of servers that are locked due to downgrade
     var lockedServersCount: Int {
-        if StoreManager.shared.isPro { return 0 }
-        return max(0, servers.count - FreeTierLimits.maxServers)
+        return 0 // Pro features unlocked
     }
 
     /// Number of workspaces that are locked due to downgrade
     var lockedWorkspacesCount: Int {
-        if StoreManager.shared.isPro { return 0 }
-        return max(0, workspaces.count - FreeTierLimits.maxWorkspaces)
+        return 0 // Pro features unlocked
     }
 
     /// Whether user has any locked items after downgrade
     var hasLockedItems: Bool {
-        lockedServersCount > 0 || lockedWorkspacesCount > 0
+        return false // Pro features unlocked
     }
 
     func createCustomEnvironment(name: String, color: String) throws -> ServerEnvironment {
