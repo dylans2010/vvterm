@@ -992,7 +992,7 @@ struct SSHTerminalPaneWrapper: NSViewRepresentable {
         var isReusingTerminal = false
         var wasActive = false
         private var lastSize: (cols: Int, rows: Int) = (0, 0)
-        private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "VVTerm", category: "SSHPane")
+        private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "app.vivy.VivyTerm", category: "SSHPane")
 
         init(server: Server, credentials: ServerCredentials, onProcessExit: @escaping () -> Void, sshClient: SSHClient) {
             self.server = server

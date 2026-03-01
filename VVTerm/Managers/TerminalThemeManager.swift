@@ -17,7 +17,7 @@ enum TerminalThemeStoragePaths {
         let fm = FileManager.default
         let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-        let bundleComponent = Bundle.main.bundleIdentifier ?? "app.vivy.vvterm"
+        let bundleComponent = Bundle.main.bundleIdentifier ?? "app.vivy.VivyTerm"
         return appSupport
             .appendingPathComponent(bundleComponent, isDirectory: true)
             .appendingPathComponent("CustomThemes", isDirectory: true)
@@ -175,7 +175,7 @@ final class TerminalThemeManager: ObservableObject {
 
     private let defaults: UserDefaults
     private let cloudKit: CloudKitManager
-    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "app.vivy.vvterm", category: "TerminalThemeManager")
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "app.vivy.VivyTerm", category: "TerminalThemeManager")
 
     private let customThemesKey = "terminalCustomThemesV1"
     private let darkThemeKey = "terminalThemeName"
