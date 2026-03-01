@@ -43,7 +43,7 @@ final class TerminalAccessoryPreferencesManager: ObservableObject {
     private let defaults: UserDefaults
     private let cloudKit: CloudKitManager
     private let logger = Logger(
-        subsystem: Bundle.main.bundleIdentifier ?? "app.vivy.vvterm",
+        subsystem: Bundle.main.bundleIdentifier ?? "app.vivy.VivyTerm",
         category: "TerminalAccessoryPreferences"
     )
 

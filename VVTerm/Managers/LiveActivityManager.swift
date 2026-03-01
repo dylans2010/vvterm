@@ -8,7 +8,7 @@ import ActivityKit
 final class LiveActivityManager {
     static let shared = LiveActivityManager()
 
-    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "VVTerm", category: "LiveActivity")
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "app.vivy.VivyTerm", category: "LiveActivity")
 
     private init() {}
 

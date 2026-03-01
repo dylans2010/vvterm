@@ -20,11 +20,7 @@ struct VVTermApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     #endif
 
-    #if os(iOS)
     @StateObject private var ghosttyApp = Ghostty.App(autoStart: false)
-    #else
-    @StateObject private var ghosttyApp = Ghostty.App()
-    #endif
     @StateObject private var terminalThemeManager = TerminalThemeManager.shared
     @StateObject private var terminalAccessoryPreferencesManager = TerminalAccessoryPreferencesManager.shared
 

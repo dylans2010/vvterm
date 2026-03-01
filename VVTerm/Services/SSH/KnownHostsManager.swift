@@ -16,7 +16,7 @@ final class KnownHostsManager: @unchecked Sendable {
     }
 
     private let storageKey = "vvterm.knownHosts"
-    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "VVTerm", category: "KnownHosts")
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "app.vivy.VivyTerm", category: "KnownHosts")
     private let lock = NSLock()
 
     private init() {}

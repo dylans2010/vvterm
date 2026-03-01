@@ -59,7 +59,7 @@ class GhosttyTerminalView: NSView {
     /// Current scrollbar state from Ghostty core (used by scroll view)
     var scrollbar: Ghostty.Action.Scrollbar?
 
-    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "win.aizen.app", category: "GhosttyTerminal")
+    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "app.vivy.VivyTerm", category: "GhosttyTerminal")
 
     // MARK: - Display Link Rendering (event-driven for SSH)
 

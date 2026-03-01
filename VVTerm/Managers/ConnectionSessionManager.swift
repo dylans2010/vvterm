@@ -232,7 +232,7 @@ final class ConnectionSessionManager: ObservableObject {
         }
     }
 
-    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "app.vivy.vvterm", category: "ConnectionSession")
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "app.vivy.VivyTerm", category: "ConnectionSession")
     private var shellRegistry = SSHShellRegistry(staleThreshold: 120)
 
     /// Terminal views indexed by session ID for voice input and other external interactions

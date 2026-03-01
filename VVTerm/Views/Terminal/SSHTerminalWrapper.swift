@@ -490,7 +490,7 @@ struct SSHTerminalWrapper: NSViewRepresentable {
         let sshClient: SSHClient
         var shellId: UUID?
         var shellTask: Task<Void, Never>?
-        let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "VVTerm", category: "SSHTerminal")
+        let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "app.vivy.VivyTerm", category: "SSHTerminal")
 
         /// Last known terminal size to detect changes
         private var lastSize: (cols: Int, rows: Int) = (0, 0)
@@ -960,7 +960,7 @@ private struct SSHTerminalRepresentable: UIViewRepresentable {
         let sshClient: SSHClient
         var shellId: UUID?
         var shellTask: Task<Void, Never>?
-        let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "VVTerm", category: "SSHTerminal")
+        let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "app.vivy.VivyTerm", category: "SSHTerminal")
 
         /// Tracks whether the terminal surface has been created and is ready for interaction
         var isTerminalReady = false

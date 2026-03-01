@@ -16,7 +16,7 @@ final class ServerManager: ObservableObject {
 
     private let cloudKit = CloudKitManager.shared
     private let keychain = KeychainManager.shared
-    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "app.vivy.vvterm", category: "ServerManager")
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "app.vivy.VivyTerm", category: "ServerManager")
     private var isSyncEnabled: Bool { SyncSettings.isEnabled }
 
     // Local storage keys
