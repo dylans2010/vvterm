@@ -5,7 +5,7 @@ import MLX
 
 // MARK: - Feed Forward Network
 
-@preconcurrency nonisolated public class FeedForward: Module {
+@preconcurrency public class FeedForward: Module {
     let linear1: Linear
     let linear2: Linear
     let activation: SiLU
@@ -24,7 +24,7 @@ import MLX
 
 // MARK: - Convolution Module
 
-@preconcurrency nonisolated public class ConformerConvolution: Module {
+@preconcurrency public class ConformerConvolution: Module {
     let padding: Int
     let pointwiseConv1: Conv1d
     let depthwiseConv: Conv1d
@@ -87,7 +87,7 @@ import MLX
 
 // MARK: - Conformer Block
 
-@preconcurrency nonisolated public class ConformerBlock: Module {
+@preconcurrency public class ConformerBlock: Module {
     let config: ConformerConfig
     let normFeedForward1: LayerNorm
     let feedForward1: FeedForward
@@ -250,7 +250,7 @@ import MLX
 
 // MARK: - Depth-wise Striding Subsampling
 
-@preconcurrency nonisolated public class DwStridingSubsampling: Module {
+@preconcurrency public class DwStridingSubsampling: Module {
     let subsamplingConvChunkingFactor: Int
     let convChannels: Int
     let samplingNum: Int
@@ -390,7 +390,7 @@ import MLX
 
 // MARK: - Positional Encoding (simplified implementations)
 
-@preconcurrency nonisolated public class RelPositionalEncoding: Module {
+@preconcurrency public class RelPositionalEncoding: Module {
     let dModel: Int
     var maxLen: Int
     let scaleInput: Bool
@@ -475,7 +475,7 @@ import MLX
     }
 }
 
-@preconcurrency nonisolated public class LocalRelPositionalEncoding: RelPositionalEncoding {
+@preconcurrency public class LocalRelPositionalEncoding: RelPositionalEncoding {
     let leftContext: Int
     let rightContext: Int
 
@@ -533,7 +533,7 @@ import MLX
     }
 }
 
-@preconcurrency nonisolated public class Conformer: Module {
+@preconcurrency public class Conformer: Module {
     let config: ConformerConfig
     let posEnc: Module?
     let preEncode: Module
@@ -647,7 +647,7 @@ import MLX
 
 // MARK: - Cache Classes (simplified)
 
-nonisolated public class ConformerCache {
+public class ConformerCache {
     public var offset: Int = 0
 
     public init() {}
@@ -662,7 +662,7 @@ nonisolated public class ConformerCache {
     }
 }
 
-nonisolated public class RotatingConformerCache: ConformerCache {
+public class RotatingConformerCache: ConformerCache {
     let contextSize: Int
     let cacheDropSize: Int
 

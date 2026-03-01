@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Tokenizer Module
 
-nonisolated public struct ParakeetTokenizer {
+public struct ParakeetTokenizer {
     /// Decode token IDs to text using vocabulary
     public static func decode(_ tokenIds: [Int], _ vocabulary: [String]) -> String {
         return tokenIds.compactMap { id in

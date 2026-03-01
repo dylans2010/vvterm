@@ -5,7 +5,7 @@ import MLX
 
 // MARK: - Prediction Network
 
-@preconcurrency nonisolated public class PredictNetwork: Module {
+@preconcurrency public class PredictNetwork: Module {
     let config: PredictConfig
     let predHidden: Int
     let embed: Embedding
@@ -67,7 +67,7 @@ import MLX
 
 // MARK: - Joint Network
 
-@preconcurrency nonisolated public class JointNetwork: Module {
+@preconcurrency public class JointNetwork: Module {
     let config: JointConfig
     let numClasses: Int
     let encLinear: Linear
@@ -139,7 +139,7 @@ import MLX
 
 // MARK: - Activation Modules
 
-@preconcurrency nonisolated public class ReLU: Module {
+@preconcurrency public class ReLU: Module {
     public override init() {
         super.init()
     }
@@ -149,7 +149,7 @@ import MLX
     }
 }
 
-@preconcurrency nonisolated public class Sigmoid: Module {
+@preconcurrency public class Sigmoid: Module {
     public override init() {
         super.init()
     }
@@ -159,7 +159,7 @@ import MLX
     }
 }
 
-@preconcurrency nonisolated public class Tanh: Module {
+@preconcurrency public class Tanh: Module {
     public override init() {
         super.init()
     }
@@ -171,7 +171,7 @@ import MLX
 
 // MARK: - Custom LSTM Implementation
 
-@preconcurrency nonisolated public class LSTMLayer: Module {
+@preconcurrency public class LSTMLayer: Module {
     public var Wx: MLXArray
     public var Wh: MLXArray
     public var bias: MLXArray?
@@ -243,7 +243,7 @@ import MLX
     }
 }
 
-@preconcurrency nonisolated public class CustomLSTM: Module {
+@preconcurrency public class CustomLSTM: Module {
     let inputSize: Int
     let hiddenSize: Int
     let numLayers: Int
@@ -345,7 +345,7 @@ import MLX
 
 // MARK: - Helper RNN Implementations (if needed for GRU)
 
-@preconcurrency nonisolated public class GRU: Module {
+@preconcurrency public class GRU: Module {
     let inputSize: Int
     let hiddenSize: Int
     let Wih: Linear  // input to hidden

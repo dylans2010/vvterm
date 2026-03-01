@@ -26,7 +26,7 @@ enum WhisperAudioError: LocalizedError {
     }
 }
 
-nonisolated final class WhisperAudioProcessor {
+final class WhisperAudioProcessor {
     private static var melFiltersCache: MLXArray?
 
     static func logMelSpectrogram(_ samples: [Float], nMels: Int = 80, padding: Int = 0) throws -> MLXArray {

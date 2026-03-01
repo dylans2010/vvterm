@@ -5,7 +5,7 @@ import MLX
 
 // MARK: - Configuration Structures
 
-nonisolated public struct PreprocessConfig: Codable {
+public struct PreprocessConfig: Codable {
     public let sampleRate: Int
     public let normalize: String
     public let windowSize: Float
@@ -58,7 +58,7 @@ nonisolated public struct PreprocessConfig: Codable {
     }
 }
 
-nonisolated public struct ConformerConfig: Codable {
+public struct ConformerConfig: Codable {
     public let featIn: Int
     public let nLayers: Int
     public let dModel: Int
@@ -108,7 +108,7 @@ nonisolated public struct ConformerConfig: Codable {
     }
 }
 
-nonisolated public struct PredictNetworkConfig: Codable {
+public struct PredictNetworkConfig: Codable {
     public let predHidden: Int
     public let predRNNLayers: Int
     public let rnnHiddenSize: Int?
@@ -120,7 +120,7 @@ nonisolated public struct PredictNetworkConfig: Codable {
     }
 }
 
-nonisolated public struct JointNetworkConfig: Codable {
+public struct JointNetworkConfig: Codable {
     public let jointHidden: Int
     public let activation: String
     public let encoderHidden: Int
@@ -134,7 +134,7 @@ nonisolated public struct JointNetworkConfig: Codable {
     }
 }
 
-nonisolated public struct PredictConfig: Codable {
+public struct PredictConfig: Codable {
     public let blankAsPad: Bool
     public let vocabSize: Int
     public let prednet: PredictNetworkConfig
@@ -146,7 +146,7 @@ nonisolated public struct PredictConfig: Codable {
     }
 }
 
-nonisolated public struct JointConfig: Codable {
+public struct JointConfig: Codable {
     public let numClasses: Int
     public let vocabulary: [String]
     public let jointnet: JointNetworkConfig
@@ -168,7 +168,7 @@ nonisolated public struct JointConfig: Codable {
     }
 }
 
-nonisolated public struct TDTDecodingConfig: Codable {
+public struct TDTDecodingConfig: Codable {
     public let modelType: String
     public let durations: [Int]
     public let greedy: [String: Any]?
@@ -208,7 +208,7 @@ nonisolated public struct TDTDecodingConfig: Codable {
     }
 }
 
-nonisolated public struct ParakeetTDTConfig: Codable {
+public struct ParakeetTDTConfig: Codable {
     public let preprocessor: PreprocessConfig
     public let encoder: ConformerConfig
     public let decoder: PredictConfig
@@ -218,7 +218,7 @@ nonisolated public struct ParakeetTDTConfig: Codable {
 
 // MARK: - Aligned Token Structures
 
-nonisolated public struct AlignedToken: Sendable {
+public struct AlignedToken: Sendable {
     public let id: Int
     public var start: Float
     public var duration: Float
@@ -237,7 +237,7 @@ nonisolated public struct AlignedToken: Sendable {
     }
 }
 
-nonisolated public struct AlignedSentence: Sendable {
+public struct AlignedSentence: Sendable {
     public let tokens: [AlignedToken]
     public let start: Float
     public let end: Float
@@ -253,7 +253,7 @@ nonisolated public struct AlignedSentence: Sendable {
     }
 }
 
-nonisolated public struct AlignedResult: Sendable {
+public struct AlignedResult: Sendable {
     public let sentences: [AlignedSentence]
 
     public var text: String {
@@ -267,7 +267,7 @@ nonisolated public struct AlignedResult: Sendable {
 
 // MARK: - Decoding Configuration
 
-nonisolated public struct DecodingConfig {
+public struct DecodingConfig {
     public let decoding: String
 
     public init(decoding: String = "greedy") {
@@ -277,7 +277,7 @@ nonisolated public struct DecodingConfig {
 
 // MARK: - Main Parakeet Model
 
-@preconcurrency nonisolated public class ParakeetTDT: Module, @unchecked Sendable {
+@preconcurrency public class ParakeetTDT: Module, @unchecked Sendable {
     public let preprocessConfig: PreprocessConfig
     public let encoderConfig: ConformerConfig
     public let vocabulary: [String]
@@ -676,7 +676,7 @@ nonisolated public struct DecodingConfig {
 
 // MARK: - Error Types
 
-nonisolated public enum ParakeetError: Error, LocalizedError {
+public enum ParakeetError: Error, LocalizedError {
     case invalidModelType(String)
     case unsupportedDecoding(String)
     case audioProcessingError(String)
@@ -738,7 +738,7 @@ nonisolated private func mergeLongestContiguous(
 
 // MARK: - Streaming Support
 
-nonisolated public class StreamingParakeet {
+public class StreamingParakeet {
     let model: ParakeetTDT
     let contextSize: (Int, Int)
     let depth: Int

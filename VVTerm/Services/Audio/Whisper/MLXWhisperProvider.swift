@@ -73,7 +73,7 @@ final class MLXWhisperProvider {
 import MLX
 import MLXNN
 
-nonisolated final class WhisperModelLoader {
+final class WhisperModelLoader {
     static let shared = WhisperModelLoader()
 
     private var cachedModel: WhisperModel?
