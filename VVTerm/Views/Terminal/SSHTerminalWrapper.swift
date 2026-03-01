@@ -117,7 +117,7 @@ protocol SSHTerminalCoordinator: AnyObject {
     func onBeforeShellStart(cols: Int, rows: Int) async
 
     /// Fallback route when local shellId is temporarily unavailable.
-    func fallbackRoute() -> (client: SSHClient, shellId: UUID)?
+    @MainActor func fallbackRoute() -> (client: SSHClient, shellId: UUID)?
 }
 
 extension SSHTerminalCoordinator {
@@ -161,10 +161,13 @@ extension SSHTerminalCoordinator {
         self.shellId = nil
 
         // Cleanup terminal to break retain cycles and release resources
-        if let terminal = terminalView {
-            terminal.cleanup()
-        }
+        let terminal = terminalView
         terminalView = nil
+        if let terminal {
+            Task { @MainActor in
+                terminal.cleanup()
+            }
+        }
     }
 
     func suspendShell() {
@@ -179,6 +182,7 @@ extension SSHTerminalCoordinator {
         self.shellId = nil
     }
 
+    @MainActor
     func startSSHConnection(terminal: GhosttyTerminalView) {
         if shellTask != nil {
             logger.debug("Ignoring duplicate start request for session \(self.sessionId)")
@@ -317,7 +321,7 @@ extension SSHTerminalCoordinator {
     // Default no-op implementations for hooks
     func onShellStarted(terminal: GhosttyTerminalView) async {}
     func onBeforeShellStart(cols: Int, rows: Int) async {}
-    func fallbackRoute() -> (client: SSHClient, shellId: UUID)? {
+    @MainActor func fallbackRoute() -> (client: SSHClient, shellId: UUID)? {
         guard let session = ConnectionSessionManager.shared.sessions.first(where: { $0.id == sessionId }),
               let client = ConnectionSessionManager.shared.sshClient(for: session),
               let shellId = ConnectionSessionManager.shared.shellId(for: session) else {
@@ -534,8 +538,8 @@ struct SSHTerminalWrapper: NSViewRepresentable {
         }
 
         private func applyWorkingDirectoryIfNeeded() async {
-            guard ConnectionSessionManager.shared.shouldApplyWorkingDirectory(for: sessionId) else { return }
-            guard let cwd = ConnectionSessionManager.shared.workingDirectory(for: sessionId) else { return }
+            guard await ConnectionSessionManager.shared.shouldApplyWorkingDirectory(for: sessionId) else { return }
+            guard let cwd = await ConnectionSessionManager.shared.workingDirectory(for: sessionId) else { return }
             guard let payload = cdCommand(for: cwd).data(using: .utf8) else { return }
             if let shellId {
                 try? await sshClient.write(payload, to: shellId)
@@ -1044,8 +1048,8 @@ private struct SSHTerminalRepresentable: UIViewRepresentable {
         }
 
         private func applyWorkingDirectoryIfNeeded() async {
-            guard ConnectionSessionManager.shared.shouldApplyWorkingDirectory(for: sessionId) else { return }
-            guard let cwd = ConnectionSessionManager.shared.workingDirectory(for: sessionId) else { return }
+            guard await ConnectionSessionManager.shared.shouldApplyWorkingDirectory(for: sessionId) else { return }
+            guard let cwd = await ConnectionSessionManager.shared.workingDirectory(for: sessionId) else { return }
             guard let payload = cdCommand(for: cwd).data(using: .utf8) else { return }
             if let shellId {
                 try? await sshClient.write(payload, to: shellId)
