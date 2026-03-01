@@ -7,7 +7,7 @@ struct WhisperEncoding {
     let nVocab: Int
 }
 
-nonisolated final class WhisperTokenizer {
+final class WhisperTokenizer {
     static let supportedLanguages: [String] = [
         "en", "zh", "de", "es", "ru", "ko", "fr", "ja", "pt", "tr", "pl", "ca", "nl", "ar", "sv", "it",
         "id", "hi", "fi", "vi", "he", "uk", "el", "ms", "cs", "ro", "da", "hu", "ta", "no", "th",

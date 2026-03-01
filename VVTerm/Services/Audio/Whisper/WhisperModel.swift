@@ -3,7 +3,7 @@ import Foundation
 import MLX
 import MLXNN
 
-nonisolated struct WhisperModelDimensions: Codable {
+struct WhisperModelDimensions: Codable {
     let n_mels: Int
     let n_audio_ctx: Int
     let n_audio_state: Int
@@ -16,17 +16,17 @@ nonisolated struct WhisperModelDimensions: Codable {
     let n_text_layer: Int
 }
 
-nonisolated struct WhisperKVCache {
+struct WhisperKVCache {
     let key: MLXArray
     let value: MLXArray
 }
 
-nonisolated struct WhisperBlockCache {
+struct WhisperBlockCache {
     var selfKV: WhisperKVCache?
     var crossKV: WhisperKVCache?
 }
 
-nonisolated final class WhisperMultiHeadAttention: Module {
+final class WhisperMultiHeadAttention: Module {
     let nHead: Int
     let query: Linear
     let key: Linear
@@ -106,7 +106,7 @@ nonisolated final class WhisperMultiHeadAttention: Module {
     }
 }
 
-nonisolated final class WhisperEncoderBlock: Module {
+final class WhisperEncoderBlock: Module {
     let attn: WhisperMultiHeadAttention
     let attnLn: LayerNorm
     let mlp1: Linear
@@ -141,7 +141,7 @@ nonisolated final class WhisperEncoderBlock: Module {
     }
 }
 
-nonisolated final class WhisperDecoderBlock: Module {
+final class WhisperDecoderBlock: Module {
     let attn: WhisperMultiHeadAttention
     let attnLn: LayerNorm
     let crossAttn: WhisperMultiHeadAttention
@@ -193,7 +193,7 @@ nonisolated final class WhisperDecoderBlock: Module {
     }
 }
 
-nonisolated final class WhisperAudioEncoder: Module {
+final class WhisperAudioEncoder: Module {
     let conv1: Conv1d
     let conv2: Conv1d
     let positionalEmbedding: MLXArray
@@ -235,7 +235,7 @@ nonisolated final class WhisperAudioEncoder: Module {
     }
 }
 
-nonisolated final class WhisperTextDecoder: Module {
+final class WhisperTextDecoder: Module {
     let tokenEmbedding: Embedding
     let positionalEmbedding: MLXArray
     let blocks: [WhisperDecoderBlock]
@@ -295,7 +295,7 @@ nonisolated final class WhisperTextDecoder: Module {
     }
 }
 
-nonisolated final class WhisperModel: Module {
+final class WhisperModel: Module {
     let dims: WhisperModelDimensions
     let encoder: WhisperAudioEncoder
     let decoder: WhisperTextDecoder

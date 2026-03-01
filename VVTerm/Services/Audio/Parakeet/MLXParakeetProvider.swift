@@ -34,7 +34,7 @@ final class MLXParakeetProvider {
 import MLX
 @preconcurrency import MLXNN
 
-nonisolated final class ParakeetModelLoader {
+final class ParakeetModelLoader {
     static let shared = ParakeetModelLoader()
 
     private var cachedModel: ParakeetTDT?
