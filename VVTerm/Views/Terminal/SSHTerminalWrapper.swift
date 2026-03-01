@@ -99,6 +99,7 @@ enum SSHConnectionRunner {
 // MARK: - SSH Terminal Coordinator Protocol
 
 /// Protocol for shared SSH terminal coordinator functionality across platforms
+@MainActor
 protocol SSHTerminalCoordinator: AnyObject {
     var server: Server { get }
     var credentials: ServerCredentials { get }
@@ -121,6 +122,7 @@ protocol SSHTerminalCoordinator: AnyObject {
 }
 
 extension SSHTerminalCoordinator {
+    @MainActor
     func sendToSSH(_ data: Data) {
         if let shellId {
             // Preserve task ordering from the caller to avoid input reordering under high throughput.
@@ -137,9 +139,7 @@ extension SSHTerminalCoordinator {
         // Coordinator can be recreated while an existing shell is still registered.
         // Fall back to the manager registry so input keeps working after view reattachment.
         Task(priority: .userInitiated) { [logger] in
-            let route = await MainActor.run {
-                self.fallbackRoute()
-            }
+            let route = await self.fallbackRoute()
 
             guard let route else { return }
             do {
@@ -150,6 +150,7 @@ extension SSHTerminalCoordinator {
         }
     }
 
+    @MainActor
     func cancelShell() {
         shellTask?.cancel()
         shellTask = nil
@@ -167,6 +168,7 @@ extension SSHTerminalCoordinator {
         terminalView = nil
     }
 
+    @MainActor
     func suspendShell() {
         // Cancel in-flight SSH work but keep the terminal surface for reuse
         shellTask?.cancel()
@@ -179,6 +181,7 @@ extension SSHTerminalCoordinator {
         self.shellId = nil
     }
 
+    @MainActor
     func startSSHConnection(terminal: GhosttyTerminalView) {
         if shellTask != nil {
             logger.debug("Ignoring duplicate start request for session \(self.sessionId)")
@@ -315,8 +318,11 @@ extension SSHTerminalCoordinator {
     }
 
     // Default no-op implementations for hooks
+    @MainActor
     func onShellStarted(terminal: GhosttyTerminalView) async {}
+    @MainActor
     func onBeforeShellStart(cols: Int, rows: Int) async {}
+    @MainActor
     func fallbackRoute() -> (client: SSHClient, shellId: UUID)? {
         guard let session = ConnectionSessionManager.shared.sessions.first(where: { $0.id == sessionId }),
               let client = ConnectionSessionManager.shared.sshClient(for: session),
@@ -476,6 +482,7 @@ struct SSHTerminalWrapper: NSViewRepresentable {
 
     // MARK: - Coordinator
 
+    @MainActor
     class Coordinator: SSHTerminalCoordinator {
         let server: Server
         let credentials: ServerCredentials
@@ -743,9 +750,9 @@ private struct SSHTerminalRepresentable: UIViewRepresentable {
                 terminal.forceRefresh()
 
                 // Also trigger SSH resize to force server to redraw prompt
-                if let sshClient = ConnectionSessionManager.shared.sshClient(for: session),
-                   let shellId = ConnectionSessionManager.shared.shellId(for: session) {
-                    Task {
+                Task {
+                    if let sshClient = ConnectionSessionManager.shared.sshClient(for: session),
+                       let shellId = ConnectionSessionManager.shared.shellId(for: session) {
                         if let size = terminal.terminalSize() {
                             try? await sshClient.resize(cols: Int(size.columns), rows: Int(size.rows), for: shellId)
                         }
@@ -945,6 +952,7 @@ private struct SSHTerminalRepresentable: UIViewRepresentable {
 
     // MARK: - Coordinator
 
+    @MainActor
     class Coordinator: SSHTerminalCoordinator {
         let server: Server
         let credentials: ServerCredentials

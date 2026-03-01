@@ -1159,17 +1159,17 @@ struct iOSTerminalView: View {
             terminal.forceRefresh()
 
             // Send resize to force server to redraw prompt
-            if let sshClient = ConnectionSessionManager.shared.sshClient(for: session),
-               let shellId = ConnectionSessionManager.shared.shellId(for: session) {
-                Task {
+            Task {
+                if let sshClient = await ConnectionSessionManager.shared.sshClient(for: session),
+                   let shellId = await ConnectionSessionManager.shared.shellId(for: session) {
                     if let size = terminal.terminalSize() {
                         try? await sshClient.resize(cols: Int(size.columns), rows: Int(size.rows), for: shellId)
                     }
                 }
             }
-        }
     }
 
+    @MainActor
     private func focusTerminal(for session: ConnectionSession) {
         guard let terminal = ConnectionSessionManager.shared.getTerminal(for: session.id) else { return }
 

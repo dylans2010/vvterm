@@ -313,74 +313,82 @@ final class LocalSSHDiscoveryService: NSObject {
 // MARK: - NetServiceBrowserDelegate
 
 extension LocalSSHDiscoveryService: NetServiceBrowserDelegate {
-    func netServiceBrowserWillSearch(_ browser: NetServiceBrowser) {}
+    nonisolated func netServiceBrowserWillSearch(_ browser: NetServiceBrowser) {}
 
-    func netServiceBrowser(_ browser: NetServiceBrowser, didNotSearch errorDict: [String: NSNumber]) {
-        let errorCode = errorDict["NSNetServicesErrorCode"]?.intValue ?? 0
-        // Policy denied values seen from local-network restricted states.
-        if errorCode == -65570 || errorCode == -72008 {
-            emit(.permissionDenied)
+    nonisolated func netServiceBrowser(_ browser: NetServiceBrowser, didNotSearch errorDict: [String: NSNumber]) {
+        Task { @MainActor in
+            let errorCode = errorDict["NSNetServicesErrorCode"]?.intValue ?? 0
+            // Policy denied values seen from local-network restricted states.
+            if errorCode == -65570 || errorCode == -72008 {
+                self.emit(.permissionDenied)
+            }
         }
     }
 
-    func netServiceBrowser(
+    nonisolated func netServiceBrowser(
         _ browser: NetServiceBrowser,
         didFind service: NetService,
         moreComing: Bool
     ) {
-        let key = "\(service.name)|\(service.type)|\(service.domain)"
-        guard seenServices.insert(key).inserted else { return }
+        Task { @MainActor in
+            let key = "\(service.name)|\(service.type)|\(service.domain)"
+            guard self.seenServices.insert(key).inserted else { return }
 
-        service.delegate = self
-        servicesByName[key] = service
-        service.resolve(withTimeout: serviceResolveTimeout)
+            service.delegate = self
+            self.servicesByName[key] = service
+            service.resolve(withTimeout: self.serviceResolveTimeout)
+        }
     }
 }
 
 // MARK: - NetServiceDelegate
 
 extension LocalSSHDiscoveryService: NetServiceDelegate {
-    func netServiceDidResolveAddress(_ sender: NetService) {
-        let hostName = sender.hostName?
-            .trimmingCharacters(in: CharacterSet(charactersIn: "."))
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+    nonisolated func netServiceDidResolveAddress(_ sender: NetService) {
+        Task { @MainActor in
+            let hostName = sender.hostName?
+                .trimmingCharacters(in: CharacterSet(charactersIn: "."))
+                .trimmingCharacters(in: .whitespacesAndNewlines)
 
-        let resolvedHost: String
-        if let hostName, !hostName.isEmpty {
-            resolvedHost = hostName
-        } else {
-            let fallback = Self.sanitizedLocalHostName(from: sender.name)
-            resolvedHost = "\(fallback).local"
+            let resolvedHost: String
+            if let hostName, !hostName.isEmpty {
+                resolvedHost = hostName
+            } else {
+                let fallback = Self.sanitizedLocalHostName(from: sender.name)
+                resolvedHost = "\(fallback).local"
+            }
+
+            let port = sender.port > 0 ? sender.port : 22
+            let discovered = DiscoveredSSHHost(
+                displayName: sender.name.isEmpty ? resolvedHost : sender.name,
+                host: resolvedHost,
+                port: port,
+                sources: [.bonjour]
+            )
+            self.emit(.hostFound(discovered))
+
+            let key = "\(sender.name)|\(sender.type)|\(sender.domain)"
+            self.servicesByName[key] = nil
+            sender.stop()
         }
-
-        let port = sender.port > 0 ? sender.port : 22
-        let discovered = DiscoveredSSHHost(
-            displayName: sender.name.isEmpty ? resolvedHost : sender.name,
-            host: resolvedHost,
-            port: port,
-            sources: [.bonjour]
-        )
-        emit(.hostFound(discovered))
-
-        let key = "\(sender.name)|\(sender.type)|\(sender.domain)"
-        servicesByName[key] = nil
-        sender.stop()
     }
 
-    func netService(_ sender: NetService, didNotResolve errorDict: [String: NSNumber]) {
-        let fallback = Self.sanitizedLocalHostName(from: sender.name)
-        let fallbackHost = "\(fallback).local"
-        let port = sender.port > 0 ? sender.port : 22
-        let discovered = DiscoveredSSHHost(
-            displayName: sender.name.isEmpty ? fallbackHost : sender.name,
-            host: fallbackHost,
-            port: port,
-            sources: [.bonjour]
-        )
-        emit(.hostFound(discovered))
+    nonisolated func netService(_ sender: NetService, didNotResolve errorDict: [String: NSNumber]) {
+        Task { @MainActor in
+            let fallback = Self.sanitizedLocalHostName(from: sender.name)
+            let fallbackHost = "\(fallback).local"
+            let port = sender.port > 0 ? sender.port : 22
+            let discovered = DiscoveredSSHHost(
+                displayName: sender.name.isEmpty ? fallbackHost : sender.name,
+                host: fallbackHost,
+                port: port,
+                sources: [.bonjour]
+            )
+            self.emit(.hostFound(discovered))
 
-        let key = "\(sender.name)|\(sender.type)|\(sender.domain)"
-        servicesByName[key] = nil
-        sender.stop()
+            let key = "\(sender.name)|\(sender.type)|\(sender.domain)"
+            self.servicesByName[key] = nil
+            sender.stop()
+        }
     }
 }
