@@ -1538,7 +1538,9 @@ class GhosttyTerminalView: UIView {
             guard let data = data, len > 0 else { return }
             let swiftData = Data(bytes: data, count: len)
             // Call directly - Ghostty calls this from main thread, no queue hop needed
-            view.writeCallback?(swiftData)
+            MainActor.assumeIsolated {
+                view.writeCallback?(swiftData)
+            }
         }, userdata)
     }
 
@@ -1546,6 +1548,7 @@ class GhosttyTerminalView: UIView {
 
 // MARK: - Gesture Recognizer Delegate
 
+@MainActor
 extension GhosttyTerminalView: UIGestureRecognizerDelegate {
     func gestureRecognizer(
         _ gestureRecognizer: UIGestureRecognizer,
@@ -1571,6 +1574,7 @@ extension GhosttyTerminalView: UIGestureRecognizerDelegate {
 
 // MARK: - Edit Menu Interaction Delegate
 
+@MainActor
 extension GhosttyTerminalView: UIEditMenuInteractionDelegate {
     func editMenuInteraction(
         _ interaction: UIEditMenuInteraction,
@@ -2412,6 +2416,7 @@ private final class RepeatableKeyButton: UIButton {
 
 // MARK: - Software Keyboard (UIKeyInput)
 
+@MainActor
 extension GhosttyTerminalView: UIKeyInput, UITextInputTraits {
     var hasText: Bool { true }
 
@@ -2550,6 +2555,7 @@ extension GhosttyTerminalView: UIKeyInput, UITextInputTraits {
 
 // MARK: - UITextInput (spacebar cursor control)
 
+@MainActor
 private final class TerminalTextPosition: UITextPosition {
     let index: Int
 
@@ -2558,6 +2564,7 @@ private final class TerminalTextPosition: UITextPosition {
     }
 }
 
+@MainActor
 private final class TerminalTextRange: UITextRange {
     let startPosition: TerminalTextPosition
     let endPosition: TerminalTextPosition
@@ -2572,6 +2579,7 @@ private final class TerminalTextRange: UITextRange {
     override var isEmpty: Bool { startPosition.index == endPosition.index }
 }
 
+@MainActor
 extension GhosttyTerminalView: UITextInput {
     var selectedTextRange: UITextRange? {
         get {
@@ -2761,11 +2769,11 @@ extension GhosttyTerminalView: UITextInput {
         return TerminalTextRange(start: start, end: end)
     }
 
-    func baseWritingDirection(for position: UITextPosition, in direction: UITextStorageDirection) -> UITextWritingDirection {
+    func baseWritingDirection(for position: UITextPosition, in direction: UITextStorageDirection) -> NSWritingDirection {
         return .leftToRight
     }
 
-    func setBaseWritingDirection(_ writingDirection: UITextWritingDirection, for range: UITextRange) {
+    func setBaseWritingDirection(_ writingDirection: NSWritingDirection, for range: UITextRange) {
         // No-op.
     }
 

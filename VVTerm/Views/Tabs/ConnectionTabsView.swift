@@ -299,7 +299,7 @@ struct ConnectionTerminalContainer: View {
             .help(Text("Disconnect from server"))
             .alert(
                 disconnectAlertTitle,
-                isPresented: $showingDisconnectConfirmation,
+                isPresented: $showingDisconnectConfirmation
             ) {
                 Button("Cancel", role: .cancel) {}
                 Button(disconnectActionTitle, role: .destructive) {
