@@ -5,6 +5,7 @@ import UIKit
 
 enum ServerTransportSelection: String, CaseIterable, Identifiable, Equatable {
     case standard
+    case sftp
     case tailscale
     case mosh
     case cloudflare
@@ -17,6 +18,8 @@ enum ServerTransportSelection: String, CaseIterable, Identifiable, Equatable {
             return String(localized: "SSH")
         case .tailscale:
             return String(localized: "Tailscale")
+        case .sftp:
+            return String(localized: "Connect via SFTP")
         case .mosh:
             return String(localized: "Mosh")
         case .cloudflare:
@@ -30,6 +33,8 @@ enum ServerTransportSelection: String, CaseIterable, Identifiable, Equatable {
             return "terminal"
         case .tailscale:
             return "network"
+        case .sftp:
+            return "folder.badge.gearshape"
         case .mosh:
             return "antenna.radiowaves.left.and.right"
         case .cloudflare:
@@ -43,6 +48,8 @@ enum ServerTransportSelection: String, CaseIterable, Identifiable, Equatable {
             return .standard
         case .tailscale:
             return .tailscale
+        case .sftp:
+            return .sftp
         case .mosh:
             return .mosh
         case .cloudflare:
@@ -54,6 +61,8 @@ enum ServerTransportSelection: String, CaseIterable, Identifiable, Equatable {
         switch server.connectionMode {
         case .tailscale:
             self = .tailscale
+        case .sftp:
+            self = .sftp
         case .mosh:
             self = .mosh
         case .cloudflare:

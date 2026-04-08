@@ -197,6 +197,7 @@ actor SSHClient {
             logger.info("Connected to \(server.host)")
             return session
         } catch {
+            logger.error("Connect failed host=\(server.host, privacy: .public):\(server.port) user=\(server.username, privacy: .public) mode=\(server.connectionMode.rawValue, privacy: .public) error=\(error.localizedDescription, privacy: .public)")
             pendingConnectSession = nil
             connectTask = nil
             connectionKey = nil
@@ -858,6 +859,7 @@ actor SSHSession {
 
         let username = config.username
         var authResult: Int32 = -1
+        var attemptedMethods: [String] = []
 
         // Query supported auth methods
         let authList = libssh2_userauth_list(session, username, UInt32(username.utf8.count))
@@ -889,6 +891,7 @@ actor SSHSession {
                 logger.error("No password provided")
                 throw SSHError.authenticationFailed
             }
+            attemptedMethods.append("password")
             logger.info("Attempting password auth for user: \(username)")
 
             // Use _ex variant since macros not available in Swift
@@ -903,6 +906,7 @@ actor SSHSession {
 
             // If password auth fails, try keyboard-interactive as fallback
             if authResult != 0 {
+                attemptedMethods.append("keyboard-interactive")
                 logger.info("Password auth failed, trying keyboard-interactive...")
 
                 keyboardInteractiveContext.setPassword(password)
@@ -921,9 +925,10 @@ actor SSHSession {
                 logger.error("No private key provided")
                 throw SSHError.authenticationFailed
             }
+            attemptedMethods.append("publickey")
             let passphrase = config.credentials.passphrase
             let publicKeyData = config.credentials.publicKey
-            logger.info("Attempting publickey auth for user: \(username)")
+            logger.info("Attempting publickey auth for user: \(username), key bytes: \(keyData.count), pubkey bytes: \(publicKeyData?.count ?? 0), has passphrase: \(passphrase != nil)")
 
             authResult = keyData.withUnsafeBytes { rawBuffer -> Int32 in
                 guard let baseAddress = rawBuffer.bindMemory(to: CChar.self).baseAddress else {
@@ -967,7 +972,9 @@ actor SSHSession {
             var errmsg_len: Int32 = 0
             libssh2_session_last_error(session, &errmsg, &errmsg_len, 0)
             let errorMsg = errmsg != nil ? String(cString: errmsg!) : "Unknown error"
-            logger.error("Auth failed (\(authResult)): \(errorMsg)")
+            let methods = attemptedMethods.joined(separator: ",")
+            logger.error("Auth failed user=\(username, privacy: .public) mode=\(self.config.connectionMode.rawValue, privacy: .public) attempts=[\(methods, privacy: .public)] code=\(authResult) message=\(errorMsg, privacy: .public)")
+            logger.error("Auth diagnostics host=\(self.config.hostKeyHost, privacy: .public):\(self.config.hostKeyPort) dial=\(self.config.dialHost, privacy: .private):\(self.config.dialPort) hasPassword=\(self.config.credentials.password != nil) hasPrivateKey=\(self.config.credentials.privateKey != nil) hasPublicKey=\(self.config.credentials.publicKey != nil) hasPassphrase=\(self.config.credentials.passphrase != nil)")
             throw SSHError.authenticationFailed
         }
 

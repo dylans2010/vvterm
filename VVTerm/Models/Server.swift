@@ -168,6 +168,7 @@ struct Server: Identifiable, Codable, Hashable {
 
 enum SSHConnectionMode: String, Codable, CaseIterable, Identifiable {
     case standard
+    case sftp
     case tailscale
     case mosh
     case cloudflare
