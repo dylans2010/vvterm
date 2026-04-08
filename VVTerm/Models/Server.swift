@@ -28,6 +28,16 @@ struct Server: Identifiable, Codable, Hashable {
     var tmuxRememberedSessionName: String?
     var createdAt: Date
     var updatedAt: Date
+    /// Jump host configuration for multi-hop SSH connections
+    var jumpHost: JumpHostConfig?
+    /// Port forwarding rules for this server
+    var portForwardingRules: [PortForwardingRule]
+    /// Saved command snippets for quick execution
+    var commandSnippets: [CommandSnippet]
+    /// Connection timeout in seconds (nil = use default)
+    var connectionTimeout: Int?
+    /// Keep-alive interval in seconds (nil = use default)
+    var keepAliveInterval: Int?
 
     init(
         id: UUID = UUID(),
@@ -51,7 +61,12 @@ struct Server: Identifiable, Codable, Hashable {
         tmuxStartupBehaviorOverride: TmuxStartupBehavior? = nil,
         tmuxRememberedSessionName: String? = nil,
         createdAt: Date = Date(),
-        updatedAt: Date = Date()
+        updatedAt: Date = Date(),
+        jumpHost: JumpHostConfig? = nil,
+        portForwardingRules: [PortForwardingRule] = [],
+        commandSnippets: [CommandSnippet] = [],
+        connectionTimeout: Int? = nil,
+        keepAliveInterval: Int? = nil
     ) {
         self.id = id
         self.workspaceId = workspaceId
@@ -75,6 +90,11 @@ struct Server: Identifiable, Codable, Hashable {
         self.tmuxRememberedSessionName = tmuxRememberedSessionName
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.jumpHost = jumpHost
+        self.portForwardingRules = portForwardingRules
+        self.commandSnippets = commandSnippets
+        self.connectionTimeout = connectionTimeout
+        self.keepAliveInterval = keepAliveInterval
     }
 
     var displayAddress: String {
@@ -107,6 +127,11 @@ struct Server: Identifiable, Codable, Hashable {
         case tmuxRememberedSessionName
         case createdAt
         case updatedAt
+        case jumpHost
+        case portForwardingRules
+        case commandSnippets
+        case connectionTimeout
+        case keepAliveInterval
     }
 
     init(from decoder: Decoder) throws {
@@ -137,6 +162,11 @@ struct Server: Identifiable, Codable, Hashable {
         tmuxRememberedSessionName = try container.decodeIfPresent(String.self, forKey: .tmuxRememberedSessionName)
         createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
         updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? Date()
+        jumpHost = try container.decodeIfPresent(JumpHostConfig.self, forKey: .jumpHost)
+        portForwardingRules = try container.decodeIfPresent([PortForwardingRule].self, forKey: .portForwardingRules) ?? []
+        commandSnippets = try container.decodeIfPresent([CommandSnippet].self, forKey: .commandSnippets) ?? []
+        connectionTimeout = try container.decodeIfPresent(Int.self, forKey: .connectionTimeout)
+        keepAliveInterval = try container.decodeIfPresent(Int.self, forKey: .keepAliveInterval)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -163,6 +193,11 @@ struct Server: Identifiable, Codable, Hashable {
         try container.encodeIfPresent(tmuxRememberedSessionName, forKey: .tmuxRememberedSessionName)
         try container.encode(createdAt, forKey: .createdAt)
         try container.encode(updatedAt, forKey: .updatedAt)
+        try container.encodeIfPresent(jumpHost, forKey: .jumpHost)
+        try container.encode(portForwardingRules, forKey: .portForwardingRules)
+        try container.encode(commandSnippets, forKey: .commandSnippets)
+        try container.encodeIfPresent(connectionTimeout, forKey: .connectionTimeout)
+        try container.encodeIfPresent(keepAliveInterval, forKey: .keepAliveInterval)
     }
 }
 
@@ -275,5 +310,115 @@ struct SSHKeyEntry: Identifiable, Codable, Hashable {
         self.createdAt = createdAt
         self.keyType = keyType
         self.publicKey = publicKey
+    }
+}
+
+// MARK: - Jump Host / Proxy Configuration
+
+struct JumpHostConfig: Codable, Hashable {
+    let id: UUID
+    var host: String
+    var port: Int
+    var username: String
+    var authMethod: AuthMethod
+    var keychainCredentialId: String?
+
+    init(
+        id: UUID = UUID(),
+        host: String,
+        port: Int = 22,
+        username: String,
+        authMethod: AuthMethod = .password,
+        keychainCredentialId: String? = nil
+    ) {
+        self.id = id
+        self.host = host
+        self.port = port
+        self.username = username
+        self.authMethod = authMethod
+        self.keychainCredentialId = keychainCredentialId
+    }
+
+    var displayAddress: String {
+        if port == 22 {
+            return "\(username)@\(host)"
+        }
+        return "\(username)@\(host):\(port)"
+    }
+}
+
+// MARK: - Port Forwarding Configuration
+
+enum PortForwardingType: String, Codable, CaseIterable, Identifiable {
+    case local      // Local port forwarding (client → remote)
+    case remote     // Remote port forwarding (remote → client)
+    case dynamic    // Dynamic SOCKS proxy
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .local: return String(localized: "Local")
+        case .remote: return String(localized: "Remote")
+        case .dynamic: return String(localized: "Dynamic (SOCKS)")
+        }
+    }
+}
+
+struct PortForwardingRule: Codable, Hashable, Identifiable {
+    let id: UUID
+    var type: PortForwardingType
+    var localPort: Int
+    var remoteHost: String?
+    var remotePort: Int?
+    var isEnabled: Bool
+    var description: String?
+
+    init(
+        id: UUID = UUID(),
+        type: PortForwardingType,
+        localPort: Int,
+        remoteHost: String? = nil,
+        remotePort: Int? = nil,
+        isEnabled: Bool = true,
+        description: String? = nil
+    ) {
+        self.id = id
+        self.type = type
+        self.localPort = localPort
+        self.remoteHost = remoteHost
+        self.remotePort = remotePort
+        self.isEnabled = isEnabled
+        self.description = description
+    }
+}
+
+// MARK: - Command Snippet
+
+struct CommandSnippet: Codable, Hashable, Identifiable {
+    let id: UUID
+    var name: String
+    var command: String
+    var description: String?
+    var tags: [String]
+    var createdAt: Date
+    var lastUsed: Date?
+
+    init(
+        id: UUID = UUID(),
+        name: String,
+        command: String,
+        description: String? = nil,
+        tags: [String] = [],
+        createdAt: Date = Date(),
+        lastUsed: Date? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.command = command
+        self.description = description
+        self.tags = tags
+        self.createdAt = createdAt
+        self.lastUsed = lastUsed
     }
 }

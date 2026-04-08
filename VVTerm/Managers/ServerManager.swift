@@ -531,6 +531,49 @@ final class ServerManager: ObservableObject {
         logger.info("Deleted server: \(server.name)")
     }
 
+    func duplicateServer(_ server: Server, credentials: ServerCredentials?) async throws -> Server {
+        let duplicatedServer = Server(
+            id: UUID(),
+            workspaceId: server.workspaceId,
+            environment: server.environment,
+            name: "\(server.name) (Copy)",
+            host: server.host,
+            port: server.port,
+            username: server.username,
+            connectionMode: server.connectionMode,
+            authMethod: server.authMethod,
+            cloudflareAccessMode: server.cloudflareAccessMode,
+            cloudflareTeamDomainOverride: server.cloudflareTeamDomainOverride,
+            cloudflareAppDomainOverride: server.cloudflareAppDomainOverride,
+            tags: server.tags,
+            notes: server.notes,
+            lastConnected: nil,
+            isFavorite: false,
+            requiresBiometricUnlock: server.requiresBiometricUnlock,
+            tmuxEnabledOverride: server.tmuxEnabledOverride,
+            tmuxStartupBehaviorOverride: server.tmuxStartupBehaviorOverride,
+            tmuxRememberedSessionName: nil,
+            createdAt: Date(),
+            updatedAt: Date(),
+            jumpHost: server.jumpHost,
+            portForwardingRules: server.portForwardingRules,
+            commandSnippets: server.commandSnippets,
+            connectionTimeout: server.connectionTimeout,
+            keepAliveInterval: server.keepAliveInterval
+        )
+
+        // Copy credentials if provided
+        if let credentials = credentials {
+            try await addServer(duplicatedServer, credentials: credentials)
+        } else {
+            // Add without credentials
+            try await addServer(duplicatedServer, credentials: ServerCredentials(serverId: duplicatedServer.id))
+        }
+
+        logger.info("Duplicated server: \(server.name) -> \(duplicatedServer.name)")
+        return duplicatedServer
+    }
+
     func updateLastConnected(for server: Server) async {
         var updated = server
         updated = Server(
@@ -555,7 +598,12 @@ final class ServerManager: ObservableObject {
             tmuxStartupBehaviorOverride: server.tmuxStartupBehaviorOverride,
             tmuxRememberedSessionName: server.tmuxRememberedSessionName,
             createdAt: server.createdAt,
-            updatedAt: Date()
+            updatedAt: Date(),
+            jumpHost: server.jumpHost,
+            portForwardingRules: server.portForwardingRules,
+            commandSnippets: server.commandSnippets,
+            connectionTimeout: server.connectionTimeout,
+            keepAliveInterval: server.keepAliveInterval
         )
 
         try? await updateServer(updated)
@@ -709,6 +757,64 @@ final class ServerManager: ObservableObject {
             $0.host.lowercased().contains(lowercased) ||
             $0.username.lowercased().contains(lowercased) ||
             $0.tags.contains { $0.lowercased().contains(lowercased) }
+        }
+    }
+
+    func filterServers(
+        query: String? = nil,
+        tags: [String]? = nil,
+        environment: ServerEnvironment? = nil,
+        connectionMode: SSHConnectionMode? = nil,
+        workspaceId: UUID? = nil,
+        isFavorite: Bool? = nil
+    ) -> [Server] {
+        var filtered = servers
+
+        // Text search
+        if let query = query, !query.isEmpty {
+            filtered = filterByQuery(filtered, query: query)
+        }
+
+        // Tag filter
+        if let tags = tags, !tags.isEmpty {
+            filtered = filtered.filter { server in
+                tags.allSatisfy { tag in
+                    server.tags.contains { $0.lowercased() == tag.lowercased() }
+                }
+            }
+        }
+
+        // Environment filter
+        if let environment = environment {
+            filtered = filtered.filter { $0.environment == environment }
+        }
+
+        // Connection mode filter
+        if let connectionMode = connectionMode {
+            filtered = filtered.filter { $0.connectionMode == connectionMode }
+        }
+
+        // Workspace filter
+        if let workspaceId = workspaceId {
+            filtered = filtered.filter { $0.workspaceId == workspaceId }
+        }
+
+        // Favorite filter
+        if let isFavorite = isFavorite {
+            filtered = filtered.filter { $0.isFavorite == isFavorite }
+        }
+
+        return filtered
+    }
+
+    private func filterByQuery(_ servers: [Server], query: String) -> [Server] {
+        let lowercased = query.lowercased()
+        return servers.filter {
+            $0.name.lowercased().contains(lowercased) ||
+            $0.host.lowercased().contains(lowercased) ||
+            $0.username.lowercased().contains(lowercased) ||
+            $0.tags.contains { $0.lowercased().contains(lowercased) } ||
+            ($0.notes?.lowercased().contains(lowercased) ?? false)
         }
     }
 
