@@ -46,7 +46,7 @@ struct SFTPDirectoryEntry: Identifiable, Hashable {
 struct SFTPTransferProgress: Identifiable {
     let id = UUID()
     let fileName: String
-    let totalBytes: Int64
+    var totalBytes: Int64
     var transferredBytes: Int64
     let isUpload: Bool
     var isComplete: Bool = false
@@ -85,7 +85,7 @@ final class SFTPConnectionManager: ObservableObject {
             let snapshot = try await SSHConnectionOperationService.shared.withTemporaryConnection(server: server, credentials: credentials) { client in
                 let pwd = try await client.execute("pwd")
                 let resolvedPath = path ?? pwd.trimmingCharacters(in: .whitespacesAndNewlines)
-                let escapedPath = Self.shellQuoted(normalized(resolvedPath.isEmpty ? "." : resolvedPath))
+                let escapedPath = Self.shellQuoted(self.normalized(resolvedPath.isEmpty ? "." : resolvedPath))
                 let listOutput = try await client.execute("LC_ALL=C ls -la \(escapedPath)")
                 return (resolvedPath, listOutput)
             }

@@ -109,7 +109,7 @@ final class DebugLogger: ObservableObject {
         }
 
         logs = Array(decoded.suffix(maxLogsInMemory))
-        logger.info("Loaded \(logs.count) debug log entries")
+        logger.info("Loaded \(self.logs.count) debug log entries")
     }
 
     private func saveLogs() {
