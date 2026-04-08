@@ -730,15 +730,10 @@ struct iOSTerminalView: View {
 
     private var tmuxAttachPromptBinding: Binding<TmuxAttachPrompt?> {
         Binding(
-            get: {
-                guard let prompt = sessionManager.tmuxAttachPrompt else { return nil }
-                return serverSessions.contains(where: { $0.id == prompt.id }) ? prompt : nil
-            },
+            get: { sessionManager.tmuxAttachPrompt },
             set: { newValue in
                 guard newValue == nil, let prompt = sessionManager.tmuxAttachPrompt else { return }
-                if serverSessions.contains(where: { $0.id == prompt.id }) {
-                    sessionManager.cancelTmuxAttachPrompt(sessionId: prompt.id)
-                }
+                sessionManager.cancelTmuxAttachPrompt(sessionId: prompt.id)
             }
         )
     }

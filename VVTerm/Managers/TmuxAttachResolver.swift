@@ -72,15 +72,26 @@ final class TmuxAttachResolver {
 
     func clearRuntimeState(for entityId: UUID, setPrompt: (TmuxAttachPrompt?) -> Void) {
         clearAttachmentState(for: entityId)
-        if promptContinuations[entityId] != nil {
-            resolvePrompt(entityId: entityId, selection: .skipTmux, setPrompt: setPrompt)
-            return
-        }
+
+        // Remove from queue first
+        promptQueue.removeAll { $0.id == entityId }
+
+        // Clear current prompt if it's for this entity
         if currentPrompt?.id == entityId {
             currentPrompt = nil
+        }
+
+        // Resume continuation if one exists and advance the queue
+        if let continuation = promptContinuations.removeValue(forKey: entityId) {
+            continuation.resume(returning: .skipTmux)
+            // Only advance if we cleared the current prompt
+            if currentPrompt == nil {
+                advancePromptQueue(setPrompt: setPrompt)
+            }
+        } else if currentPrompt == nil {
+            // No continuation but we cleared current prompt, advance queue
             advancePromptQueue(setPrompt: setPrompt)
         }
-        promptQueue.removeAll { $0.id == entityId }
     }
 
     func updateAttachmentState(for entityId: UUID, selection: TmuxAttachSelection, setPrompt: (TmuxAttachPrompt?) -> Void) {
@@ -268,7 +279,6 @@ final class TmuxAttachResolver {
 
     private func advancePromptQueue(setPrompt: (TmuxAttachPrompt?) -> Void) {
         guard currentPrompt == nil, !promptQueue.isEmpty else {
-            setPrompt(currentPrompt)
             return
         }
         currentPrompt = promptQueue.removeFirst()
