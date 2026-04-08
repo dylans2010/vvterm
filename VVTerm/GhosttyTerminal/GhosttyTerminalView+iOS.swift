@@ -1539,6 +1539,10 @@ class GhosttyTerminalView: UIView {
         ghostty_surface_set_write_callback(surface, { userdata, data, len in
             guard let userdata = userdata else { return }
             let view = Unmanaged<GhosttyTerminalView>.fromOpaque(userdata).takeUnretainedValue()
+
+            // Prevent use-after-cleanup by checking shutdown state
+            guard !view.isShuttingDown else { return }
+
             guard let data = data, len > 0 else { return }
             let swiftData = Data(bytes: data, count: len)
             // Call directly - Ghostty calls this from main thread, no queue hop needed
