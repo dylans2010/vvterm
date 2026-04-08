@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import os.log
 #if os(iOS)
 import UIKit
 #elseif os(macOS)
@@ -30,6 +31,7 @@ struct TerminalContainerView: View {
     @State private var reconnectInFlight = false
     @State private var connectWatchdogToken = UUID()
     @AppStorage("sshAutoReconnect") private var autoReconnectEnabled = true
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "app.vivy.VivyTerm", category: "TerminalContainer")
 
     /// Check if terminal already exists (was previously created)
     private var terminalAlreadyExists: Bool {
@@ -113,37 +115,41 @@ struct TerminalContainerView: View {
                         ghosttyApp.startIfNeeded()
                     }
                 if let server = server, let credentials = credentials {
-                    // Wait for ghostty to be ready before creating terminal
-                    if ghosttyApp.readiness == .ready {
-                        SSHTerminalWrapper(
-                            session: session,
-                            server: server,
-                            credentials: credentials,
-                            isActive: isActive,
-                            onProcessExit: {
-                                ConnectionSessionManager.shared.handleShellExit(for: session.id)
-                            },
-                            onReady: {
-                                isReady = true
-                            },
-                            onVoiceTrigger: voiceTriggerHandler
-                        )
-                        .id(reconnectToken)
-                        .opacity(isReady || terminalAlreadyExists ? 1 : 0)
-                        .onAppear {
-                            // If terminal already exists, mark as ready immediately
-                            if terminalAlreadyExists {
-                                isReady = true
+                    if server.connectionMode == .sftp {
+                        SFTPBrowserView(sessionId: session.id, server: server, credentials: credentials)
+                    } else {
+                        // Wait for ghostty to be ready before creating terminal
+                        if ghosttyApp.readiness == .ready {
+                            SSHTerminalWrapper(
+                                session: session,
+                                server: server,
+                                credentials: credentials,
+                                isActive: isActive,
+                                onProcessExit: {
+                                    ConnectionSessionManager.shared.handleShellExit(for: session.id)
+                                },
+                                onReady: {
+                                    isReady = true
+                                },
+                                onVoiceTrigger: voiceTriggerHandler
+                            )
+                            .id(reconnectToken)
+                            .opacity(isReady || terminalAlreadyExists ? 1 : 0)
+                            .onAppear {
+                                // If terminal already exists, mark as ready immediately
+                                if terminalAlreadyExists {
+                                    isReady = true
+                                }
+                                #if os(macOS)
+                                ConnectionSessionManager.shared.getTerminal(for: session.id)?.resumeRendering()
+                                #endif
                             }
                             #if os(macOS)
-                            ConnectionSessionManager.shared.getTerminal(for: session.id)?.resumeRendering()
+                            .onDisappear {
+                                ConnectionSessionManager.shared.getTerminal(for: session.id)?.pauseRendering()
+                            }
                             #endif
                         }
-                        #if os(macOS)
-                        .onDisappear {
-                            ConnectionSessionManager.shared.getTerminal(for: session.id)?.pauseRendering()
-                        }
-                        #endif
                     }
 
                     if ghosttyApp.readiness == .error {
@@ -574,8 +580,10 @@ struct TerminalContainerView: View {
         do {
             credentials = try KeychainManager.shared.getCredentials(for: server)
             errorMessage = nil
+            logger.info("Loaded credentials for terminal session=\(session.id.uuidString, privacy: .public) server=\(server.name, privacy: .public) mode=\(server.connectionMode.rawValue, privacy: .public)")
         } catch {
             errorMessage = String(format: String(localized: "Failed to load credentials: %@"), error.localizedDescription)
+            logger.error("Credential load failed for session=\(session.id.uuidString, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
     }
 
