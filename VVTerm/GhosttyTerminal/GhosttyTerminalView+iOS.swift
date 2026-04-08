@@ -645,7 +645,9 @@ class GhosttyTerminalView: UIView {
                 object: nil,
                 queue: .main
             ) { [weak self] _ in
-                self?.updateHardwareKeyboardState(reloadInputViewsIfNeeded: true)
+                MainActor.assumeIsolated {
+                    self?.updateHardwareKeyboardState(reloadInputViewsIfNeeded: true)
+                }
             }
         )
         hardwareKeyboardObservers.append(
@@ -654,7 +656,9 @@ class GhosttyTerminalView: UIView {
                 object: nil,
                 queue: .main
             ) { [weak self] _ in
-                self?.updateHardwareKeyboardState(reloadInputViewsIfNeeded: true)
+                MainActor.assumeIsolated {
+                    self?.updateHardwareKeyboardState(reloadInputViewsIfNeeded: true)
+                }
             }
         )
         updateHardwareKeyboardState(reloadInputViewsIfNeeded: false)
@@ -1574,26 +1578,27 @@ extension GhosttyTerminalView: UIGestureRecognizerDelegate {
 
 // MARK: - Edit Menu Interaction Delegate
 
-@MainActor
 extension GhosttyTerminalView: UIEditMenuInteractionDelegate {
-    func editMenuInteraction(
+    nonisolated func editMenuInteraction(
         _ interaction: UIEditMenuInteraction,
         menuFor configuration: UIEditMenuConfiguration,
         suggestedActions: [UIMenuElement]
     ) -> UIMenu? {
-        var actions: [UIMenuElement] = []
+        MainActor.assumeIsolated {
+            var actions: [UIMenuElement] = []
 
-        if let cSurface = surface?.unsafeCValue, ghostty_surface_has_selection(cSurface) {
-            actions.append(UIAction(title: String(localized: "Copy"), image: UIImage(systemName: "doc.on.doc")) { [weak self] _ in
-                self?.copy(nil)
+            if let cSurface = surface?.unsafeCValue, ghostty_surface_has_selection(cSurface) {
+                actions.append(UIAction(title: String(localized: "Copy"), image: UIImage(systemName: "doc.on.doc")) { [weak self] _ in
+                    self?.copy(nil)
+                })
+            }
+
+            actions.append(UIAction(title: String(localized: "Paste"), image: UIImage(systemName: "doc.on.clipboard")) { [weak self] _ in
+                self?.paste(nil)
             })
+
+            return UIMenu(children: actions)
         }
-
-        actions.append(UIAction(title: String(localized: "Paste"), image: UIImage(systemName: "doc.on.clipboard")) { [weak self] _ in
-            self?.paste(nil)
-        })
-
-        return UIMenu(children: actions)
     }
 }
 
