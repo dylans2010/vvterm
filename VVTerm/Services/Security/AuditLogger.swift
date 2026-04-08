@@ -115,7 +115,7 @@ final class AuditLogger: ObservableObject {
         }
 
         events = Array(decoded.suffix(maxEventsInMemory))
-        logger.info("Loaded \(events.count) audit events")
+        logger.info("Loaded \(self.events.count) audit events")
     }
 
     private func saveEvents() {
