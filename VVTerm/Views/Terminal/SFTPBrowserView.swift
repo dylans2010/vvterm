@@ -54,7 +54,7 @@ struct SFTPBrowserView: View {
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: icon(for: entry.kind))
-                                .foregroundStyle(entry.kind == .directory ? .tint : .secondary)
+                                .foregroundStyle(entry.kind == .directory ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(entry.name)
                                     .font(.body)
