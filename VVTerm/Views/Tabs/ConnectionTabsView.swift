@@ -88,14 +88,9 @@ struct ConnectionTerminalContainer: View {
 
     private var tmuxAttachPromptBinding: Binding<TmuxAttachPrompt?> {
         Binding(
-            get: {
-                guard let prompt = tabManager.tmuxAttachPrompt else { return nil }
-                guard tabManager.paneStates[prompt.id]?.serverId == server.id else { return nil }
-                return prompt
-            },
+            get: { tabManager.tmuxAttachPrompt },
             set: { newValue in
                 guard newValue == nil, let prompt = tabManager.tmuxAttachPrompt else { return }
-                guard tabManager.paneStates[prompt.id]?.serverId == server.id else { return }
                 tabManager.cancelTmuxAttachPrompt(paneId: prompt.id)
             }
         )
