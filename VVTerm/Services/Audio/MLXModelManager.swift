@@ -332,7 +332,14 @@ final class MLXModelManager: NSObject, ObservableObject {
             throw NSError(domain: "MLXModelManager", code: 404, userInfo: [NSLocalizedDescriptionKey: "No compatible weights found for this model"])
         }
 
-        let configURL = URL(string: "\(base)/\(configPath!)")!
+        guard let resolvedConfigPath = configPath,
+              let configURL = URL(string: "\(base)/\(resolvedConfigPath)") else {
+            throw NSError(
+                domain: "MLXModelManager",
+                code: 400,
+                userInfo: [NSLocalizedDescriptionKey: "Invalid model config URL"]
+            )
+        }
         var items: [DownloadItem] = [
             DownloadItem(url: configURL, destination: modelDirectory.appendingPathComponent("config.json"))
         ]

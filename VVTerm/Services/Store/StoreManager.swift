@@ -10,7 +10,7 @@ final class StoreManager: ObservableObject {
     static let shared = StoreManager()
     static let reviewModeCode = ReviewModeCode.value
 
-    @Published var isPro: Bool = false
+    @Published var isPro: Bool = true
     @Published var isLifetime: Bool = false
     @Published var subscriptionStatus: Product.SubscriptionInfo.Status?
     @Published var products: [Product] = []
@@ -80,11 +80,16 @@ final class StoreManager: ObservableObject {
     // MARK: - Initialization
 
     private init() {
-        updateListenerTask = listenForTransactions()
-        Task {
-            await loadProducts()
-            await checkEntitlements()
-        }
+        // Pro is permanently enabled for all users.
+        // Avoid StoreKit startup work so launch cannot fail due to StoreKit configuration/network state.
+        isPro = true
+        isLifetime = false
+        subscriptionStatus = nil
+        products = []
+        purchaseState = .idle
+        restoreState = .idle
+        lastPurchasedProductId = nil
+        updateListenerTask = nil
     }
 
     deinit {
@@ -94,119 +99,37 @@ final class StoreManager: ObservableObject {
     // MARK: - Load Products
 
     func loadProducts() async {
-        let maxRetries = 3
-        for attempt in 0..<maxRetries {
-            do {
-                products = try await Product.products(for: VVTermProducts.allProducts)
-                logger.info("Loaded \(self.products.count) products")
-                return
-            } catch {
-                logger.error("Failed to load products (attempt \(attempt + 1)/\(maxRetries)): \(error.localizedDescription)")
-                if attempt < maxRetries - 1 {
-                    try? await Task.sleep(nanoseconds: UInt64(pow(2.0, Double(attempt))) * 1_000_000_000)
-                }
-            }
-        }
+        products = []
+        logger.info("StoreKit product loading skipped (all features unlocked)")
     }
 
     // MARK: - Purchase
 
     func purchase(_ product: Product) async {
-        purchaseState = .purchasing
+        _ = product
+        purchaseState = .purchased
         lastPurchasedProductId = nil
-        logger.info("Purchasing \(product.id)")
-
-        do {
-            let result = try await product.purchase()
-
-            switch result {
-            case .success(let verification):
-                let transaction = try checkVerified(verification)
-                await transaction.finish()
-                await checkEntitlements()
-                lastPurchasedProductId = product.id
-                purchaseState = .purchased
-                logger.info("Purchase successful: \(product.id)")
-
-            case .userCancelled:
-                purchaseState = .idle
-                logger.info("Purchase cancelled by user")
-
-            case .pending:
-                purchaseState = .idle
-                logger.info("Purchase pending")
-
-            @unknown default:
-                purchaseState = .idle
-            }
-        } catch {
-            purchaseState = .failed(error.localizedDescription)
-            logger.error("Purchase failed: \(error.localizedDescription)")
-        }
+        isPro = true
+        logger.info("Purchase bypassed (all features unlocked)")
     }
 
     // MARK: - Restore Purchases
 
     func restorePurchases() async {
-        restoreState = .restoring
-        logger.info("Restoring purchases")
-        do {
-            try await AppStore.sync()
-            await checkEntitlements()
-            restoreState = .restored(hasAccess: isPro)
-            logger.info("Purchases restored")
-        } catch {
-            restoreState = .failed(error.localizedDescription)
-            logger.error("Failed to restore purchases: \(error.localizedDescription)")
-        }
+        restoreState = .restored(hasAccess: true)
+        isPro = true
+        logger.info("Restore bypassed (all features unlocked)")
     }
 
     // MARK: - Check Entitlements
 
     func checkEntitlements() async {
+        _ = await Task.yield()
         refreshReviewModeState()
-        var hasAccess = false
-        var hasLifetime = false
-
-        for await result in Transaction.currentEntitlements {
-            if case .verified(let transaction) = result {
-                switch transaction.productID {
-                case VVTermProducts.proMonthly,
-                     VVTermProducts.proYearly:
-                    hasAccess = true
-                case VVTermProducts.proLifetime:
-                    hasAccess = true
-                    hasLifetime = true
-                default:
-                    break
-                }
-            }
-        }
-
-        // Check subscription status for billing retry / grace period
-        var activeStatus: Product.SubscriptionInfo.Status?
-        if let product = monthlyProduct ?? yearlyProduct,
-           let statuses = try? await product.subscription?.status {
-            activeStatus = statuses.first {
-                $0.state == .subscribed || $0.state == .inGracePeriod
-            } ?? statuses.first
-
-            if !hasAccess {
-                for status in statuses {
-                    if case .verified = status.transaction,
-                       status.state == .inBillingRetryPeriod || status.state == .inGracePeriod {
-                        hasAccess = true
-                        break
-                    }
-                }
-            }
-        }
-
-        isPro = hasAccess || isReviewModeEnabled
-        isLifetime = hasLifetime
-        subscriptionStatus = activeStatus
-
-        logger.info("Entitlements checked: isPro=\(hasAccess), isLifetime=\(hasLifetime), reviewMode=\(self.isReviewModeEnabled)")
+        isPro = true
+        isLifetime = false
+        subscriptionStatus = nil
+        logger.info("Entitlements bypassed (all features unlocked)")
     }
 
     // MARK: - Transaction Listener
