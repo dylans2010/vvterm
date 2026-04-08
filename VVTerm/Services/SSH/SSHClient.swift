@@ -889,7 +889,7 @@ actor SSHSession {
         case .password:
             guard let password = config.credentials.password else {
                 logger.error("No password provided")
-                throw SSHError.authenticationFailed
+                throw SSHError.authenticationFailed("No password provided for password authentication")
             }
             attemptedMethods.append("password")
             logger.info("Attempting password auth for user: \(username)")
@@ -923,7 +923,7 @@ actor SSHSession {
         case .sshKey, .sshKeyWithPassphrase:
             guard let keyData = config.credentials.privateKey else {
                 logger.error("No private key provided")
-                throw SSHError.authenticationFailed
+                throw SSHError.authenticationFailed("No private key provided for public key authentication")
             }
             attemptedMethods.append("publickey")
             let passphrase = config.credentials.passphrase
@@ -967,15 +967,37 @@ actor SSHSession {
         }
 
         if authResult != 0 {
-            // Get detailed error message
+            // Get detailed error message from libssh2
             var errmsg: UnsafeMutablePointer<CChar>?
             var errmsg_len: Int32 = 0
             libssh2_session_last_error(session, &errmsg, &errmsg_len, 0)
             let errorMsg = errmsg != nil ? String(cString: errmsg!) : "Unknown error"
-            let methods = attemptedMethods.joined(separator: ",")
+            let methods = attemptedMethods.joined(separator: ", ")
+
+            // Log detailed diagnostics
             logger.error("Auth failed user=\(username, privacy: .public) mode=\(self.config.connectionMode.rawValue, privacy: .public) attempts=[\(methods, privacy: .public)] code=\(authResult) message=\(errorMsg, privacy: .public)")
             logger.error("Auth diagnostics host=\(self.config.hostKeyHost, privacy: .public):\(self.config.hostKeyPort) dial=\(self.config.dialHost, privacy: .private):\(self.config.dialPort) hasPassword=\(self.config.credentials.password != nil) hasPrivateKey=\(self.config.credentials.privateKey != nil) hasPublicKey=\(self.config.credentials.publicKey != nil) hasPassphrase=\(self.config.credentials.passphrase != nil)")
-            throw SSHError.authenticationFailed
+
+            // Create user-friendly error message with details
+            var userMessage = errorMsg
+            if authResult == LIBSSH2_ERROR_AUTHENTICATION_FAILED || authResult == -18 {
+                // Common authentication failures
+                switch config.authMethod {
+                case .password:
+                    userMessage = "Invalid password or username. Server message: \(errorMsg)"
+                case .sshKey, .sshKeyWithPassphrase:
+                    if config.credentials.passphrase != nil {
+                        userMessage = "Invalid SSH key, passphrase, or username. Server message: \(errorMsg)"
+                    } else {
+                        userMessage = "Invalid SSH key or username. Key may require a passphrase. Server message: \(errorMsg)"
+                    }
+                }
+            } else {
+                // Other authentication errors
+                userMessage = "Authentication failed with methods [\(methods)]. Error: \(errorMsg) (code: \(authResult))"
+            }
+
+            throw SSHError.authenticationFailed(userMessage)
         }
 
         logger.info("Authentication successful")
@@ -1604,7 +1626,7 @@ struct SSHSessionConfig {
 enum SSHError: LocalizedError {
     case notConnected
     case connectionFailed(String)
-    case authenticationFailed
+    case authenticationFailed(String)
     case tailscaleAuthenticationNotAccepted
     case cloudflareConfigurationRequired(String)
     case cloudflareAuthenticationFailed(String)
@@ -1623,7 +1645,7 @@ enum SSHError: LocalizedError {
         switch self {
         case .notConnected: return "Not connected to server"
         case .connectionFailed(let msg): return "Connection failed: \(msg)"
-        case .authenticationFailed: return "Authentication failed"
+        case .authenticationFailed(let msg): return "Authentication failed: \(msg)"
         case .tailscaleAuthenticationNotAccepted:
             return "\(String(localized: "Tailscale SSH authentication was not accepted by the server.")) \(String(localized: "This app currently supports direct tailnet connections only (no userspace proxy fallback)."))"
         case .cloudflareConfigurationRequired(let message):

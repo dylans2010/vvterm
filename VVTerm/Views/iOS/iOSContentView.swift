@@ -194,7 +194,7 @@ struct iOSServerListView: View {
                     ForEach(filteredServers) { server in
                         iOSServerRow(
                             server: server,
-                            onTap: { onServerSelected(server) },
+                            onTap: { selectedServer in onServerSelected(selectedServer) },
                             onEdit: { serverToEdit = server },
                             onLockedTap: { lockedServerAlert = server }
                         )
