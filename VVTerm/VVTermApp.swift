@@ -12,6 +12,7 @@ import AppKit
 struct VVTermApp: App {
     init() {
         TerminalDefaults.applyIfNeeded()
+        StartupSafety.runStartupAudit()
     }
 
     #if os(macOS)
@@ -184,28 +185,8 @@ struct VVTermCommands: Commands {
 }
 
 class AppDelegate: NSObject, NSApplicationDelegate {
-    private var lastForegroundSyncAt: Date = .distantPast
-    private let foregroundSyncMinimumInterval: TimeInterval = 20
 
-    func applicationDidFinishLaunching(_ notification: Notification) {
-        // Subscribe to CloudKit changes
-        Task {
-            await CloudKitManager.shared.subscribeToChanges()
-        }
-        NSApplication.shared.registerForRemoteNotifications()
-    }
 
-    func applicationDidBecomeActive(_ notification: Notification) {
-        guard SyncSettings.isEnabled else { return }
-
-        let now = Date()
-        guard now.timeIntervalSince(lastForegroundSyncAt) >= foregroundSyncMinimumInterval else { return }
-        lastForegroundSyncAt = now
-
-        Task {
-            await ServerManager.shared.loadData()
-        }
-    }
 
     func applicationDidResignActive(_ notification: Notification) {
         Task { @MainActor in
@@ -228,60 +209,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         false // Keep running in menu bar
     }
 
-    func application(_ application: NSApplication, didReceiveRemoteNotification userInfo: [String: Any]) {
-        guard SyncSettings.isEnabled else { return }
-        Task {
-            await ServerManager.shared.loadData()
-        }
-    }
 }
 #else
 // MARK: - iOS App Delegate
 
 class AppDelegate: NSObject, UIApplicationDelegate {
-    private var lastForegroundSyncAt: Date = .distantPast
-    private let foregroundSyncMinimumInterval: TimeInterval = 20
 
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
-        // Subscribe to CloudKit changes
-        Task {
-            await CloudKitManager.shared.subscribeToChanges()
-        }
-        application.registerForRemoteNotifications()
-
         return true
     }
 
-    func applicationDidBecomeActive(_ application: UIApplication) {
-        guard SyncSettings.isEnabled else { return }
 
-        let now = Date()
-        guard now.timeIntervalSince(lastForegroundSyncAt) >= foregroundSyncMinimumInterval else { return }
-        lastForegroundSyncAt = now
-
-        Task {
-            await ServerManager.shared.loadData()
-        }
-    }
-
-    func application(
-        _ application: UIApplication,
-        didReceiveRemoteNotification userInfo: [AnyHashable: Any],
-        fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
-    ) {
-        guard SyncSettings.isEnabled else {
-            completionHandler(.noData)
-            return
-        }
-
-        Task {
-            await ServerManager.shared.loadData()
-            completionHandler(.newData)
-        }
-    }
 
     func applicationWillTerminate(_ application: UIApplication) {
         // Close all connections synchronously to ensure cleanup before exit
