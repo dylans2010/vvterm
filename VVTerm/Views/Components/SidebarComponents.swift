@@ -70,14 +70,31 @@ struct ServerRow: View {
                         Task { try? await ServerManager.shared.deleteServer(server) }
                     }
                 } else {
-                    Button("Connect") {
+                    Button {
                         if let onConnect {
                             onConnect(server)
                         } else {
                             tabManager.selectedViewByServer[server.id] = "stats"
                             tabManager.connectedServerIds.insert(server.id)
                         }
+                    } label: {
+                        Label("Connect", systemImage: "play.fill")
                     }
+
+                    Button {
+                        // Create a temporary server variant with SFTP mode
+                        var sftpServer = server
+                        sftpServer.connectionMode = .sftp
+                        if let onConnect {
+                            onConnect(sftpServer)
+                        } else {
+                            tabManager.selectedViewByServer[sftpServer.id] = "stats"
+                            tabManager.connectedServerIds.insert(sftpServer.id)
+                        }
+                    } label: {
+                        Label("Connect via SFTP", systemImage: "folder.badge.gearshape")
+                    }
+
                     Button("Edit") { onEdit(server) }
                     Divider()
                     Button("Remove", role: .destructive) {

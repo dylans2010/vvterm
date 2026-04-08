@@ -10,7 +10,7 @@ import SwiftUI
 
 struct iOSServerRow: View {
     let server: Server
-    let onTap: () -> Void
+    let onTap: (Server) -> Void
     let onEdit: () -> Void
     var onLockedTap: (() -> Void)? = nil
 
@@ -25,7 +25,7 @@ struct iOSServerRow: View {
             if isLocked {
                 onLockedTap?()
             } else {
-                onTap()
+                onTap(server)
             }
         }) {
             HStack(spacing: 12) {
@@ -104,9 +104,18 @@ struct iOSServerRow: View {
                 }
             } else {
                 Button {
-                    onTap()
+                    onTap(server)
                 } label: {
                     Label("Connect", systemImage: "play.fill")
+                }
+
+                Button {
+                    // Create a temporary server variant with SFTP mode
+                    var sftpServer = server
+                    sftpServer.connectionMode = .sftp
+                    onTap(sftpServer)
+                } label: {
+                    Label("Connect via SFTP", systemImage: "folder.badge.gearshape")
                 }
 
                 Button {
